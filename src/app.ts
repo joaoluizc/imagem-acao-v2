@@ -17,7 +17,11 @@ ClientToServerEvents,
 ServerToClientEvents,
 InterServerEvents,
 SocketData
-> = new Server(server);
+> = new Server(server, {
+  cors: {
+    origin: "https://imagem-acao-v2.onrender.com",
+  }
+});
 
 // Room management
 const rooms: Map<string, RoomState> = new Map();
