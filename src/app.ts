@@ -17,11 +17,7 @@ ClientToServerEvents,
 ServerToClientEvents,
 InterServerEvents,
 SocketData
-> = new Server(server, {
-  cors: {
-    origin: "http://localhost:5173",
-  }
-});
+> = new Server(server);
 
 // Room management
 const rooms: Map<string, RoomState> = new Map();
