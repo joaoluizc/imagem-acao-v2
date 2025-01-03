@@ -19,7 +19,7 @@ InterServerEvents,
 SocketData
 > = new Server(server, {
   cors: {
-    origin: "https://imagem-acao-v2.onrender.com",
+    origin: "*",
   }
 });
 
