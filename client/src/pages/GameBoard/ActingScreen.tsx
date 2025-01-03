@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useRoomState } from "@/providers/useRoomState";
-import { socket } from "@/socket";
+import { useSocket } from "@/providers/useSocket";
 import { CircleX } from "lucide-react";
 
 function ActingScreen() {
+  const { socket } = useSocket();
   const { roomState } = useRoomState();
   const { gameState } = roomState;
   const { currentCategory, currentWord } = gameState;

@@ -7,10 +7,12 @@ export interface ServerToClientEvents {
     roomJoined: (data: { roomCode: string; playerId: string, isHost: boolean }) => void;
     playerJoined: (data: { players: Player[]}) => void;
     gameStarted: (data: RoomState) => void;
-    newHost: (data: { hostId: string }) => void;
-    playerLeft: (data: { players: Player[] }) => void;
+    playerLeft: (data: { players: Player[], hostId: string }) => void;
+    newHost: (data: { isHost: boolean }) => void;
     newRound: (data: GameState) => void;
     roundFinished: (data: RoomState) => void;
+    reconnectionFailed: (data: { message: string }) => void;
+    reconnectionSuccess: (data: { gameState: GameState, players: Player[], isHost: boolean }) => void;
   }
   
   export interface ClientToServerEvents {
@@ -20,6 +22,7 @@ export interface ServerToClientEvents {
     roundEstablished: (data: { roomCode: string, categoryRoll: string }) => void;
     finishRound: (data: { roomCode: string, whoGuessed: "A" | "B" | "NO" }) => void;
     startNewRound: (data: { roomCode: string }) => void;
+    attemptReconnection: (data: { playerId: string, roomCode: string }) => void;
   }
   
   export interface InterServerEvents {

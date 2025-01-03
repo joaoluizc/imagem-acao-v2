@@ -2,10 +2,11 @@ import { Dices } from "lucide-react";
 import DiceAnimation from "./DiceAnimation";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
-import { socket } from "@/socket";
 import { useRoomState } from "@/providers/useRoomState";
+import { useSocket } from "@/providers/useSocket";
 
 function CategoryDiceScreen() {
+  const { socket } = useSocket();
   const [diceScreenStage, setDiceScreenStage] = useState<
     "waiting" | "rolling" | "result"
   >("waiting");

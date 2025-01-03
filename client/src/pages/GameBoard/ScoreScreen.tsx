@@ -1,9 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { useRoomState } from "@/providers/useRoomState";
-import { socket } from "@/socket";
+import { useSocket } from "@/providers/useSocket";
 import calculateScores from "@/utils/calculateScores";
 
 function ScoreScreen() {
+  const { socket } = useSocket();
   const { roomState } = useRoomState();
   const { playedWords, gameState, playerId } = roomState;
   const { currentPlayer } = gameState;

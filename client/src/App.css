@@ -1,4 +1,17 @@
-#root {
+:root {
+  height: -webkit-fill-available;
   margin: 0 auto;
   text-align: center;
+}
+
+body {
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+}
+
+.app-container {
+  height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom);
+  position: relative;
+  overflow-y: auto;
 }

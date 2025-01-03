@@ -238,6 +238,35 @@ io.on("connection", (socket) => {
     io.to(roomCode).emit("newRound", room.gameState);
   });
 
+  socket.on("attemptReconnection", ({ playerId, roomCode }) => {
+    console.log('Reconnection attempt:', playerId, roomCode);
+    const room = rooms.get(roomCode);
+    if (!room) {
+      socket.emit('reconnectionFailed', { message: 'Room not found' });
+      return;
+    }
+
+    const player = room.players.find(p => p.id === playerId);
+    if (!player) {
+      socket.emit('reconnectionFailed', { message: 'Player not found' });
+      return;
+    }
+
+    // Update player's socket ID
+    player.id = socket.id;
+    if (room.hostId === playerId) {
+      room.hostId = socket.id;
+    }
+
+    // Join room and send current state
+    socket.join(roomCode);
+    socket.emit('reconnectionSuccess', {
+      gameState: room.gameState,
+      players: room.players,
+      isHost: room.hostId === socket.id
+    });
+  });
+
   // Handle disconnection
   socket.on("disconnect", () => {
     console.log("Disconnected:", socket.id);
@@ -254,10 +283,11 @@ io.on("connection", (socket) => {
         } else if (socket.id === room.hostId) {
           // Assign new host if the host left
           room.hostId = room.players[0].id;
-          io.to(code).emit("newHost", { hostId: room.hostId });
+          socket.to(code).emit("newHost", { isHost: true });
         }
 
         io.to(code).emit("playerLeft", {
+          hostId: room.hostId,
           players: room.players,
         });
       }

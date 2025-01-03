@@ -1,6 +1,7 @@
-import { socket } from "@/socket";
 import { RoomState } from "@/types";
 import { createContext, useEffect, useState } from "react";
+import { useSocket } from "./useSocket";
+import { storeSessionData } from "@/utils/storeSessionData";
 
 export type RoomStateContextType = {
   roomState: RoomState;
@@ -14,6 +15,7 @@ export const RoomStateContext = createContext<RoomStateContextType | undefined>(
 );
 
 export function GameStateProvider({ children }: { children: React.ReactNode }) {
+  const { socket } = useSocket();
   const [error, setError] = useState("");
   const [roomState, setRoomState] = useState<RoomState>({
     playerId: "",
@@ -48,18 +50,31 @@ export function GameStateProvider({ children }: { children: React.ReactNode }) {
       }));
     });
 
-    socket.on("playerLeft", ({ players }) => {
+    socket.on("playerLeft", ({ players, hostId }) => {
       setRoomState((prev) => ({
         ...prev,
+        hostId,
         players,
       }));
     });
 
-    socket.on("gameStarted", (roomState) => {
+    socket.on("newHost", ({ isHost }) => {
       setRoomState((prev) => ({
         ...prev,
-        ...roomState,
+        isHost,
       }));
+    });
+
+    socket.on("gameStarted", (roomStateData) => {
+      setRoomState((prev) => {
+        storeSessionData(prev.playerId, roomStateData.code);
+        console.log("gameStarted: ", JSON.stringify(roomStateData));
+        console.log("gameStarted prev: ", JSON.stringify(prev));
+        return {
+          ...prev,
+          ...roomStateData,
+        };
+      });
     });
 
     socket.on("newRound", (gameState) => {
@@ -79,6 +94,13 @@ export function GameStateProvider({ children }: { children: React.ReactNode }) {
     socket.on("error", ({ message }) => {
       setError(message);
       console.log("Error:", message);
+    });
+
+    socket.on("reconnectionSuccess", (roomState) => {
+      setRoomState((prev) => ({
+        ...prev,
+        ...roomState,
+      }));
     });
 
     // return () => {

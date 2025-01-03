@@ -2,11 +2,12 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { socket } from "../socket.js";
 import { useRoomState } from "../providers/useRoomState.js";
 import { RoomStateContextType } from "../providers/room-state-provider.js";
+import { useSocket } from "@/providers/useSocket.js";
 
 const WaitingRoom = () => {
+  const { socket } = useSocket();
   const [playerName, setPlayerName] = useState("");
   const [inRoom, setInRoom] = useState(false);
   const { roomState, setRoomState, error, setError }: RoomStateContextType =
