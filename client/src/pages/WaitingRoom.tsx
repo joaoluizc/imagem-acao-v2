@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useRoomState } from "../providers/useRoomState.js";
 import { RoomStateContextType } from "../providers/room-state-provider.js";
 import { useSocket } from "@/providers/useSocket.js";
-import RestoreSavedSession from "@/components/restoreSavedSession.js";
+import RestoreSavedSession from "@/components/RestoreSavedSession.js";
 import {
   InputOTP,
   InputOTPGroup,
