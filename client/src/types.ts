@@ -2,6 +2,7 @@ export interface Player {
   id: string;
   name: string;
   team?: string;
+  isConnected: boolean;
 }
 
 export interface Teams {

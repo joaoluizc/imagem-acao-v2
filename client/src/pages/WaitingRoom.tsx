@@ -5,6 +5,15 @@ import { Input } from "@/components/ui/input";
 import { useRoomState } from "../providers/useRoomState.js";
 import { RoomStateContextType } from "../providers/room-state-provider.js";
 import { useSocket } from "@/providers/useSocket.js";
+import RestoreSavedSession from "@/components/restoreSavedSession.js";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp.js";
+import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
+import { Copy } from "lucide-react";
 
 const WaitingRoom = () => {
   const { socket } = useSocket();
@@ -69,9 +78,17 @@ const WaitingRoom = () => {
     return (
       <Card className="w-full max-w-md mx-auto">
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="flex items-center justify-center gap-2">
             Room:{" "}
             {`${roomState.code.slice(0, 3)}-${roomState.code.slice(3, 6)}`}
+            <Copy
+              className="cursor-pointer"
+              onClick={() => {
+                navigator.clipboard.writeText(roomState.code);
+              }}
+              aria-label="Copy room code"
+              size="16"
+            />
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -101,47 +118,61 @@ const WaitingRoom = () => {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle>Join or Create a Room</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div>
-            <Input
-              type="text"
-              placeholder="Your Name"
-              value={playerName}
-              onChange={(e) => setPlayerName(e.target.value)}
-              className="w-full"
-            />
-          </div>
-          <div className="flex gap-4">
-            <Button className="flex-1" onClick={handleCreateRoom}>
-              Create Room
-            </Button>
-            <div className="flex-1 space-y-2">
+    <div>
+      <RestoreSavedSession />
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle>Join or Create a Room</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
               <Input
                 type="text"
-                placeholder="Room Code"
-                value={roomState.code}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  setRoomState((prev) => ({
-                    ...prev,
-                    code: e.target.value.toUpperCase(),
-                  }))
-                }
-                maxLength={6}
+                placeholder="Your Name"
+                value={playerName}
+                onChange={(e) => setPlayerName(e.target.value)}
+                className="w-full"
               />
-              <Button className="w-full" onClick={handleJoinRoom}>
-                Join Room
-              </Button>
             </div>
+            <div className="flex gap-4">
+              <Button className="flex-1" onClick={handleCreateRoom}>
+                Create Room
+              </Button>
+              <div className="flex-1 space-y-2">
+                <InputOTP
+                  maxLength={6}
+                  value={roomState.code}
+                  onChange={(code) =>
+                    setRoomState((prev) => ({
+                      ...prev,
+                      code: code.toUpperCase(),
+                    }))
+                  }
+                  pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                >
+                  <InputOTPGroup>
+                    <InputOTPSlot index={0} />
+                    <InputOTPSlot index={1} />
+                    <InputOTPSlot index={2} />
+                  </InputOTPGroup>
+                  <InputOTPSeparator />
+                  <InputOTPGroup>
+                    <InputOTPSlot index={3} />
+                    <InputOTPSlot index={4} />
+                    <InputOTPSlot index={5} />
+                  </InputOTPGroup>
+                </InputOTP>
+                <Button className="w-full" onClick={handleJoinRoom}>
+                  Join Room
+                </Button>
+              </div>
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
           </div>
-          {error && <p className="text-red-500 text-sm">{error}</p>}
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

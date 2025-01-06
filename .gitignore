@@ -24,3 +24,4 @@ dist-ssr
 *.sw?
 
 client/src/socket.ts
+client/src/providers/socket-provider.tsx

@@ -6,8 +6,12 @@ import { storeSessionData } from "@/utils/storeSessionData";
 export type RoomStateContextType = {
   roomState: RoomState;
   error: string;
+  isReconnecting: boolean;
+  hasLeftWaitingRoom: boolean;
   setRoomState: React.Dispatch<React.SetStateAction<RoomState>>;
   setError: React.Dispatch<React.SetStateAction<string>>;
+  setIsReconnecting: React.Dispatch<React.SetStateAction<boolean>>;
+  setHasLeftWaitingRoom: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export const RoomStateContext = createContext<RoomStateContextType | undefined>(
@@ -17,6 +21,8 @@ export const RoomStateContext = createContext<RoomStateContextType | undefined>(
 export function GameStateProvider({ children }: { children: React.ReactNode }) {
   const { socket } = useSocket();
   const [error, setError] = useState("");
+  const [isReconnecting, setIsReconnecting] = useState(false);
+  const [hasLeftWaitingRoom, setHasLeftWaitingRoom] = useState(false);
   const [roomState, setRoomState] = useState<RoomState>({
     playerId: "",
     code: "",
@@ -68,13 +74,12 @@ export function GameStateProvider({ children }: { children: React.ReactNode }) {
     socket.on("gameStarted", (roomStateData) => {
       setRoomState((prev) => {
         storeSessionData(prev.playerId, roomStateData.code);
-        console.log("gameStarted: ", JSON.stringify(roomStateData));
-        console.log("gameStarted prev: ", JSON.stringify(prev));
         return {
           ...prev,
           ...roomStateData,
         };
       });
+      setHasLeftWaitingRoom(true);
     });
 
     socket.on("newRound", (gameState) => {
@@ -97,10 +102,18 @@ export function GameStateProvider({ children }: { children: React.ReactNode }) {
     });
 
     socket.on("reconnectionSuccess", (roomState) => {
+      console.log("Reconnection success");
+      console.log("roomState: ", roomState);
       setRoomState((prev) => ({
         ...prev,
         ...roomState,
       }));
+      setIsReconnecting(false);
+      setHasLeftWaitingRoom(true);
+    });
+
+    socket.on("reconnectionFailed", () => {
+      setIsReconnecting(false);
     });
 
     // return () => {
@@ -115,8 +128,12 @@ export function GameStateProvider({ children }: { children: React.ReactNode }) {
   const value = {
     roomState,
     error,
+    isReconnecting,
+    hasLeftWaitingRoom,
     setRoomState,
     setError,
+    setIsReconnecting,
+    setHasLeftWaitingRoom,
   };
 
   return (

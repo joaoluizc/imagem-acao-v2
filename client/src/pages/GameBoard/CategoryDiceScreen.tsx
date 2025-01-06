@@ -14,7 +14,6 @@ function CategoryDiceScreen() {
   const { roomState } = useRoomState();
 
   const handleContinue = () => {
-    console.log("Continue");
     socket.emit("roundEstablished", {
       roomCode: roomState.code,
       categoryRoll: thrownCategory,

@@ -1,48 +1,64 @@
 import { useEffect } from 'react';
 import { useRoomState } from '@/providers/useRoomState';
 import { useSocket } from '@/providers/useSocket';
-import { storeSessionData } from '@/utils/storeSessionData';
+import { getSessionData } from '@/utils/getSessionData';
 
 export function useReconnection() {
     const { socket } = useSocket();
-    const { roomState } = useRoomState();
+    const { setIsReconnecting, hasLeftWaitingRoom } = useRoomState();
     
-    useEffect(() => {  
-      // Attempt reconnection
-      const reconnectToGame = () => {
-        console.log('reconnectToGame: setting up listeners');
-        const sessionDataString = localStorage.getItem('gameSession');
-        if (!sessionDataString) return;
-        const sessionData = JSON.parse(sessionDataString);
-        if (!sessionData) {
-            localStorage.removeItem('gameSession');
-            console.error('Invalid session data found in local storage');
-            return
-        };
-  
-        console.log('reconnectToGame: attempting reconnection');
-        // Check if session is still valid (within last hour)
-        if (Date.now() - sessionData.timestamp > 3600000) {
-          localStorage.removeItem('gameSession');
-          return;
-        }
-  
-        socket.emit('attemptReconnection', {
-          playerId: sessionData.playerId,
-          roomCode: sessionData.roomCode
-        });
+    const reconnectToGame = () => {
+      if(!hasLeftWaitingRoom) return;
+      console.log('reconnectToGame: getting session data from local storage');
+      setIsReconnecting(true);
+
+      const sessionData = getSessionData();
+      if (!sessionData || !sessionData.playerId || !sessionData.roomCode) {
+          setIsReconnecting(false);
+          return
       };
 
-      const handleDisconnect = () => {
-        storeSessionData(roomState.playerId, roomState.code);
-      };
-  
-      window.addEventListener('focus', reconnectToGame);
-      socket.on('connect', reconnectToGame);
-      socket.on('disconnect', handleDisconnect);
+      console.log('reconnectToGame: attempting reconnection');
+      // Check if session is still valid (within last hour)
+      if (Date.now() - sessionData.timestamp > 3600000) {
+        localStorage.removeItem('gameSession');
+        setIsReconnecting(false);
+        return;
+      }
+
+      socket.emit('attemptReconnection', {
+        playerId: sessionData.playerId,
+        roomCode: sessionData.roomCode
+      });
+    };
+
+    useEffect(() => {  
+      window.addEventListener('focus', () => reconnectToGame());
   
       return () => {
-        window.removeEventListener('focus', reconnectToGame);
+        // window.removeEventListener('focus', reconnectToGame);
       };
     }, [socket]);
+
+    useEffect(() => {
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          reconnectToGame();
+        }
+      };
+    
+      window.addEventListener('visibilitychange', handleVisibilityChange);
+      // return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, []);
+
+    useEffect(() => {
+      const handlePageShow = (event: PageTransitionEvent) => {
+        if (event.persisted) {
+          reconnectToGame();
+        }
+      };
+    
+      window.addEventListener('pageshow', handlePageShow);
+      // return () => window.removeEventListener('pageshow', handlePageShow);
+    }, []);
   }

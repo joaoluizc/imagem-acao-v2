@@ -12,7 +12,8 @@ export interface ServerToClientEvents {
     newRound: (data: GameState) => void;
     roundFinished: (data: RoomState) => void;
     reconnectionFailed: (data: { message: string }) => void;
-    reconnectionSuccess: (data: { gameState: GameState, players: Player[], isHost: boolean }) => void;
+    reconnectionSuccess: (data: RoomState & { isHost: boolean, playerId: string }) => void;
+    roomExists: (data: { exists: boolean }) => void;
   }
   
   export interface ClientToServerEvents {
@@ -23,6 +24,7 @@ export interface ServerToClientEvents {
     finishRound: (data: { roomCode: string, whoGuessed: "A" | "B" | "NO" }) => void;
     startNewRound: (data: { roomCode: string }) => void;
     attemptReconnection: (data: { playerId: string, roomCode: string }) => void;
+    doesRoomExist: (data: { roomCode: string }) => void;
   }
   
   export interface InterServerEvents {
@@ -38,6 +40,7 @@ export interface Player {
     id: string;
     name: string;
     team?: string;
+    isConnected: boolean;
 }
 
 export interface PlayingWord {
@@ -52,9 +55,14 @@ export interface PlayedWord extends PlayingWord {
   guessed?: boolean;
 }
 
+export interface Teams {
+  [key: string]: Player[];
+}
+
 export interface GameState {
     status: "waiting" | "playing";
     currentPhase: "waiting" | "choosing" | "acting" | "guessing" | "scoring";
+    lastPlayer: string;
     currentPlayer: string;
     currentWord: PlayingWord;
     currentCategory: "P" | "A" | "D" | "L" | "O" | "";
@@ -64,10 +72,7 @@ export interface GameState {
 export interface RoomState {
     code: string;
     players: Player[];
-    teams: {
-        A: Player[];
-        B: Player[];
-    };
+    teams: Teams;
     hostId: string;
     gameState: GameState;
     playedWords?: PlayedWord[];

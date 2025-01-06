@@ -46,6 +46,7 @@ function createRoomState(hostId: string): RoomState {
     gameState: {
       status: "waiting",
       currentPhase: "waiting",
+      lastPlayer: "",
       currentPlayer: "",
       currentWord: {
         word: "",
@@ -64,7 +65,7 @@ io.on("connection", (socket) => {
   // Create a new room
   socket.on("createRoom", ({ playerName }) => {
     const roomState = createRoomState(socket.id);
-    const player = { id: socket.id, name: playerName, team: "A" };
+    const player = { id: socket.id, name: playerName, team: "A", isConnected: true };
 
     roomState.players.push(player);
     rooms.set(roomState.code, roomState);
@@ -95,7 +96,7 @@ io.on("connection", (socket) => {
       return;
     }
 
-    const player = { id: socket.id, name: playerName };
+    const player = { id: socket.id, name: playerName, isConnected: true };
     room.players.push(player);
 
     socket.join(roomCode);
@@ -135,11 +136,6 @@ io.on("connection", (socket) => {
         player.team = randomizedTeam;
         console.log(`Assigning player ${player.name} (${player.id}) to team ${randomizedTeam}`);
       }
-    });
-
-    console.log("Teams:", room.teams);
-    room.players.forEach((player) => {
-      console.log(player.name, player.team);
     });
 
     //prepare for first round
@@ -225,9 +221,14 @@ io.on("connection", (socket) => {
       return;
     }
 
+
+    const lastPlayer = room.gameState.currentPlayer;
+    const currentPlayer = chooseNextPlayer(room).id;
+    room.gameState.lastPlayer = lastPlayer;
+    room.gameState.currentPlayer = currentPlayer;
+    
     room.gameState.status = "playing";
     room.gameState.currentPhase = "choosing";
-    room.gameState.currentPlayer = chooseNextPlayer(room.teams, room.players.find((p) => p.id === room.gameState.currentPlayer)!).id;
     room.gameState.currentCategory = "";
     room.gameState.currentWord = {
       word: "",
@@ -261,10 +262,15 @@ io.on("connection", (socket) => {
     // Join room and send current state
     socket.join(roomCode);
     socket.emit('reconnectionSuccess', {
-      gameState: room.gameState,
-      players: room.players,
-      isHost: room.hostId === socket.id
+      ...room,
+      isHost: room.hostId === socket.id,
+      playerId: socket.id,
     });
+  });
+
+  socket.on("doesRoomExist", ({ roomCode }) => {
+    const room = rooms.get(roomCode);
+    socket.emit("roomExists", { exists: !!room });
   });
 
   // Handle disconnection
@@ -273,17 +279,29 @@ io.on("connection", (socket) => {
     // Find and clean up any rooms where this socket was a player
     for (const [code, room] of rooms.entries()) {
       const playerIndex = room.players.findIndex((p: Player) => p.id === socket.id);
+      const hasMoreThanOneActivePlayers = room.players.filter((p: Player) => p.isConnected).length > 1;
 
       if (playerIndex !== -1) {
-        room.players.splice(playerIndex, 1);
-
-        if (room.players.length === 0) {
-          // Remove empty rooms
+        if (!hasMoreThanOneActivePlayers) {
+          console.log("No active players in room. Deleting room: ", code);
           rooms.delete(code);
         } else if (socket.id === room.hostId) {
-          // Assign new host if the host left
+          console.log("Host disconnected. Assigning new host for room: ", code);
           room.hostId = room.players[0].id;
           socket.to(code).emit("newHost", { isHost: true });
+        }
+
+        // handle current player disconnecting
+        // if (room.gameState.currentPlayer === socket.id) {
+        //   const newPlayer = chooseNextPlayer(room);
+        //   room.gameState.currentPlayer = newPlayer.id;
+        //   room.gameState.lastPlayer = socket.id;
+        // }
+
+        if (room.gameState.status === "waiting") {
+          room.players.splice(playerIndex, 1);
+        } else {
+          room.players[playerIndex].isConnected = false;
         }
 
         io.to(code).emit("playerLeft", {
